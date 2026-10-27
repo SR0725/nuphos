@@ -939,6 +939,7 @@ final class ChatSession {
         var freshRetries = 0
         var idleTimeouts = 0
         var gatewayRetries = 0
+        var notReadyRetries = 0
         var forceFresh = false
         var usedFreshFallback = false
         var accepted = false
@@ -1053,6 +1054,13 @@ final class ChatSession {
                     continue
                 case .transcriptOutOfSync(let stored) where !sendFullTranscript:
                     if let stored, rebaseTo == nil { rebaseTo = stored } else { sendFullTranscript = true }
+                    continue
+                // A send the server queue does not take (a new conversation, a
+                // continuation) can still meet a runtime that is starting up.
+                case .runtimeNotReady where !accepted && notReadyRetries < 30:
+                    notReadyRetries += 1
+                    phaseLabel = "Waiting for the runtime to be ready…"
+                    try? await Task.sleep(for: backoff(notReadyRetries, base: 0.5, max: 3))
                     continue
                 case .other(_, _, let code) where reconnects == 0 && [502, 503, 504, 520, 521, 522, 523, 524].contains(code) && gatewayRetries < 3:
                     gatewayRetries += 1
