@@ -149,6 +149,7 @@ struct AgentPage: View {
         // with the same id keeps the view's identity, so it would never load.
         guard target.sessionId != openChat?.id else { return }
         if let team = store.teams.first(where: { $0.id == target.teamId }) { store.select(team: team) }
+        endEditing()
         openChat = OpenChat(session: store.session(sessionId: target.sessionId, title: target.title, teamId: target.teamId))
     }
 
