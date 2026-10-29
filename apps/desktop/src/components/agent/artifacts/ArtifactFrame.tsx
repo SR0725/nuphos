@@ -19,6 +19,7 @@ export function ArtifactFrame({
   title,
   onError,
   onEscape,
+  onArrow,
   onClickTarget,
   className,
   sandbox = ARTIFACT_FRAME_SANDBOX,
@@ -28,6 +29,8 @@ export function ArtifactFrame({
   onError?: (message: string) => void
   /** Escape pressed while the page had the keyboard; the frame around it may want to step back. */
   onEscape?: () => void
+  /** Left or right pressed in the page outside a field, and the page left it alone. */
+  onArrow?: (direction: 'left' | 'right') => void
   /** Every click inside the page: what was clicked, so a prototype can follow it. */
   onClickTarget?: (click: ArtifactClick) => void
   className?: string
@@ -38,6 +41,9 @@ export function ArtifactFrame({
   const srcDoc = useMemo(() => artifactSrcDoc(html, channel), [html, channel])
   const report = useStableCallback((message: string) => onError?.(message))
   const escape = useStableCallback(() => onEscape?.())
+  const arrow = useStableCallback((message: string) => {
+    if (message === 'left' || message === 'right') onArrow?.(message)
+  })
   const clicked = useStableCallback((message: string) => {
     const click = parseArtifactClick(message)
 
@@ -52,6 +58,7 @@ export function ArtifactFrame({
       const message = readArtifactFrameMessage(event.data, channel)
 
       if (message?.type === 'escape') escape()
+      else if (message?.type === 'arrow') arrow(message.message)
       else if (message?.type === 'click') clicked(message.message)
       else if (message) report(message.message)
     }
@@ -59,7 +66,7 @@ export function ArtifactFrame({
     window.addEventListener('message', receive)
 
     return () => window.removeEventListener('message', receive)
-  }, [channel, report, escape, clicked])
+  }, [channel, report, escape, arrow, clicked])
 
   return (
     <iframe

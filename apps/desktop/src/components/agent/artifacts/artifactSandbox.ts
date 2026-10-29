@@ -11,7 +11,7 @@ export const ARTIFACT_THUMBNAIL_SANDBOX = 'allow-scripts'
 
 export type ArtifactFrameMessage = {
   channel: string
-  type: 'error' | 'escape' | 'click'
+  type: 'error' | 'escape' | 'click' | 'arrow'
   message: string
 }
 
@@ -39,6 +39,11 @@ if(event.message)send(event.message+(event.lineno?' (line '+event.lineno+')':'')
 },true);
 window.addEventListener('unhandledrejection',function(event){var reason=event.reason;send('Unhandled rejection: '+(reason&&reason.message?reason.message:reason))});
 window.addEventListener('keydown',function(event){if(event.key==='Escape'){try{parent.postMessage({nuphosArtifact:channel,type:'escape',message:''},'*')}catch(e){}}},true);
+window.addEventListener('keydown',function(event){
+if(event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||(event.key!=='ArrowLeft'&&event.key!=='ArrowRight'))return;
+var t=event.target;if(t&&t.closest&&t.closest('input,textarea,select,[contenteditable]:not([contenteditable=false])'))return;
+try{parent.postMessage({nuphosArtifact:channel,type:'arrow',message:event.key==='ArrowLeft'?'left':'right'},'*')}catch(e){}
+});
 document.addEventListener('click',function(event){
 var link=event.target&&event.target.closest?event.target.closest('a[href]'):null;
 if(!link)return;var href=link.getAttribute('href')||'';
@@ -108,7 +113,7 @@ export function readArtifactFrameMessage(
   const { nuphosArtifact, type, message } = data as Record<string, unknown>
 
   if (nuphosArtifact !== channel || typeof message !== 'string') return null
-  if (type !== 'error' && type !== 'escape' && type !== 'click') return null
+  if (type !== 'error' && type !== 'escape' && type !== 'click' && type !== 'arrow') return null
 
   return { channel, type, message }
 }

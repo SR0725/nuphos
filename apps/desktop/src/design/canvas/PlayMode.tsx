@@ -143,8 +143,9 @@ export function PlayMode({ page, startId, onClose }: Props) {
               html={current.html}
               title={current.title}
               className="h-full w-full"
-              // A click inside the screen moves focus into it; Esc still leaves.
+              // A click inside the screen moves focus into it; Esc and ← → still work.
               onEscape={onClose}
+              onArrow={(direction) => (direction === 'left' ? back() : next())}
               onClickTarget={(click) => {
                 const target = playTarget(click, outgoing, frames)
 

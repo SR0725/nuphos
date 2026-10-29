@@ -104,3 +104,15 @@ test('a click report is read, and a malformed one is dropped', () => {
   })
   assert.equal(parseArtifactClick('not json'), null)
 })
+
+test('an arrow key the page left alone is reported, outside fields only', () => {
+  const doc = artifactSrcDoc('<p>hi</p>', 'c')
+
+  assert.equal(
+    readArtifactFrameMessage({ nuphosArtifact: 'c', type: 'arrow', message: 'left' }, 'c')?.type,
+    'arrow',
+  )
+  assert.ok(doc.includes("type:'arrow'"))
+  assert.ok(doc.includes('event.defaultPrevented'))
+  assert.ok(doc.includes('input,textarea,select'))
+})
