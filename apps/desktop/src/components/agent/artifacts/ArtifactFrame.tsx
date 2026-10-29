@@ -7,20 +7,29 @@ import {
   ARTIFACT_FRAME_SANDBOX,
   ARTIFACT_THUMBNAIL_SANDBOX,
   artifactSrcDoc,
+  parseArtifactClick,
   readArtifactFrameMessage,
 } from './artifactSandbox'
+
+import type { ArtifactClick } from './artifactSandbox'
 
 /** An HTML artifact, live, in its sandbox. Pages are drawn on white unless they paint their own ground. */
 export function ArtifactFrame({
   html,
   title,
   onError,
+  onEscape,
+  onClickTarget,
   className,
   sandbox = ARTIFACT_FRAME_SANDBOX,
 }: {
   html: string
   title: string
   onError?: (message: string) => void
+  /** Escape pressed while the page had the keyboard; the frame around it may want to step back. */
+  onEscape?: () => void
+  /** Every click inside the page: what was clicked, so a prototype can follow it. */
+  onClickTarget?: (click: ArtifactClick) => void
   className?: string
   sandbox?: string
 }) {
@@ -28,6 +37,12 @@ export function ArtifactFrame({
   const channel = useMemo(() => crypto.randomUUID(), [])
   const srcDoc = useMemo(() => artifactSrcDoc(html, channel), [html, channel])
   const report = useStableCallback((message: string) => onError?.(message))
+  const escape = useStableCallback(() => onEscape?.())
+  const clicked = useStableCallback((message: string) => {
+    const click = parseArtifactClick(message)
+
+    if (click) onClickTarget?.(click)
+  })
 
   useEffect(() => {
     const receive = (event: MessageEvent) => {
@@ -36,13 +51,15 @@ export function ArtifactFrame({
       if (!own || event.source !== own) return
       const message = readArtifactFrameMessage(event.data, channel)
 
-      if (message) report(message.message)
+      if (message?.type === 'escape') escape()
+      else if (message?.type === 'click') clicked(message.message)
+      else if (message) report(message.message)
     }
 
     window.addEventListener('message', receive)
 
     return () => window.removeEventListener('message', receive)
-  }, [channel, report])
+  }, [channel, report, escape, clicked])
 
   return (
     <iframe

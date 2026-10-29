@@ -115,6 +115,20 @@ export const teamChannels = {
     atlas.archSaveDiagram(teamId, diagramId, patch),
   'arch:deleteDiagram': (_e: unknown, teamId: string, diagramId: string) =>
     atlas.archDeleteDiagram(teamId, diagramId),
+  // --- Designs ---
+  'designs:list': (_e: unknown, teamId: string) => atlas.designsList(teamId),
+  'designs:stamp': (_e: unknown, teamId: string, designId: string) =>
+    atlas.designsStamp(teamId, designId),
+  'designs:get': (_e: unknown, teamId: string, designId: string) =>
+    atlas.designsGet(teamId, designId),
+  'designs:create': (_e: unknown, teamId: string, input: unknown) =>
+    atlas.designsCreate(teamId, input),
+  'designs:replace': (_e: unknown, teamId: string, designId: string, patch: unknown) =>
+    atlas.designsReplace(teamId, designId, patch),
+  'designs:applyOps': (_e: unknown, teamId: string, designId: string, ops: unknown) =>
+    atlas.designsApplyOps(teamId, designId, ops),
+  'designs:delete': (_e: unknown, teamId: string, designId: string) =>
+    atlas.designsDelete(teamId, designId),
   // --- Dashboards ---
   'dashboards:list': (_e: unknown, teamId: string) => atlas.dashboardsList(teamId),
   'dashboards:create': (_e: unknown, teamId: string, input: unknown) =>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { artifactSrcDoc, readArtifactFrameMessage } from './artifactSandbox.ts'
+import { artifactSrcDoc, parseArtifactClick, readArtifactFrameMessage } from './artifactSandbox.ts'
 
 const bootstrapAt = (doc: string) => doc.indexOf('<base target="_blank">')
 
@@ -83,4 +83,24 @@ test('only messages on the frame’s own channel are read', () => {
     null,
   )
   assert.equal(readArtifactFrameMessage('boom', 'c'), null)
+})
+
+test('a click report is read, and a malformed one is dropped', () => {
+  const report = { goto: 'next', text: 'Go', clickable: true, declared: true }
+
+  assert.equal(
+    readArtifactFrameMessage(
+      { nuphosArtifact: 'c', type: 'click', message: JSON.stringify(report) },
+      'c',
+    )?.type,
+    'click',
+  )
+  assert.deepEqual(parseArtifactClick(JSON.stringify(report)), report)
+  assert.deepEqual(parseArtifactClick('{"goto":""}'), {
+    goto: null,
+    text: '',
+    clickable: false,
+    declared: false,
+  })
+  assert.equal(parseArtifactClick('not json'), null)
 })
