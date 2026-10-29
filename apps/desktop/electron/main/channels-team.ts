@@ -2,6 +2,7 @@ import * as atlas from '../atlas'
 import * as discordInstall from '../discord-install'
 import * as slackInstall from '../slack-install'
 
+import { designChannels } from './channels-designs'
 import { skillChannels } from './channels-skills'
 
 import type { DashboardViewRange } from '../../src/dashboards/schema'
@@ -15,6 +16,15 @@ import type {
 } from '../../src/types/runtime'
 
 export const teamChannels = {
+  'atlas:getTeamGoogleClient': (_e: unknown, teamId: string) => atlas.getTeamGoogleClient(teamId),
+  'atlas:setTeamGoogleClient': (
+    _e: unknown,
+    teamId: string,
+    clientId: string,
+    clientSecret: string,
+  ) => atlas.setTeamGoogleClient(teamId, clientId, clientSecret),
+  'atlas:deleteTeamGoogleClient': (_e: unknown, teamId: string) =>
+    atlas.deleteTeamGoogleClient(teamId),
   'atlas:startRuntimeLogin': (_e: unknown, teamId: string, runtimeId: string) =>
     atlas.startRuntimeLogin(teamId, runtimeId),
   'atlas:getRuntimeLogin': (_e: unknown, teamId: string, runtimeId: string) =>
@@ -80,8 +90,12 @@ export const teamChannels = {
     atlas.getRuntimeModelConfig(...args),
   'atlas:requestRuntimeUpdate': (_e: unknown, teamId: string, runtimeId: string) =>
     atlas.requestRuntimeUpdate(teamId, runtimeId),
-  'atlas:getRuntimeInstanceStatus': (_e: unknown, teamId: string, runtimeId: string) =>
-    atlas.getRuntimeInstanceStatus(teamId, runtimeId),
+  'atlas:getRuntimeInstanceStatus': (
+    _e: unknown,
+    teamId: string,
+    runtimeId: string,
+    wake?: boolean,
+  ) => atlas.getRuntimeInstanceStatus(teamId, runtimeId, wake),
   'atlas:getRuntimeInstanceMetrics': (
     _e: unknown,
     teamId: string,
@@ -115,20 +129,6 @@ export const teamChannels = {
     atlas.archSaveDiagram(teamId, diagramId, patch),
   'arch:deleteDiagram': (_e: unknown, teamId: string, diagramId: string) =>
     atlas.archDeleteDiagram(teamId, diagramId),
-  // --- Designs ---
-  'designs:list': (_e: unknown, teamId: string) => atlas.designsList(teamId),
-  'designs:stamp': (_e: unknown, teamId: string, designId: string) =>
-    atlas.designsStamp(teamId, designId),
-  'designs:get': (_e: unknown, teamId: string, designId: string) =>
-    atlas.designsGet(teamId, designId),
-  'designs:create': (_e: unknown, teamId: string, input: unknown) =>
-    atlas.designsCreate(teamId, input),
-  'designs:replace': (_e: unknown, teamId: string, designId: string, patch: unknown) =>
-    atlas.designsReplace(teamId, designId, patch),
-  'designs:applyOps': (_e: unknown, teamId: string, designId: string, ops: unknown) =>
-    atlas.designsApplyOps(teamId, designId, ops),
-  'designs:delete': (_e: unknown, teamId: string, designId: string) =>
-    atlas.designsDelete(teamId, designId),
   // --- Dashboards ---
   'dashboards:list': (_e: unknown, teamId: string) => atlas.dashboardsList(teamId),
   'dashboards:create': (_e: unknown, teamId: string, input: unknown) =>
@@ -181,6 +181,7 @@ export const teamChannels = {
   'dashboards:deleteAlert': (_e: unknown, teamId: string, dashboardId: string, panelId: string) =>
     atlas.dashboardsDeleteAlert(teamId, dashboardId, panelId),
   ...skillChannels,
+  ...designChannels,
   'atlas:createTeam': (_e: unknown, name: string) => atlas.createTeam(name),
   'atlas:updateTeam': (_e: unknown, teamId: string, input: { name: string }) =>
     atlas.updateTeam(teamId, input),
