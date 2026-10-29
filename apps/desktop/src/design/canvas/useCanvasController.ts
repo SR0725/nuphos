@@ -1,16 +1,18 @@
 import { useCallback, useEffect } from 'react'
 
 import { cloneObjects, copyObjects, pasteObjects } from './clipboard'
+import { takeFocus } from './focusRequest'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 
 import type { Tool } from './tools'
 import type { useCanvasGraph } from './useCanvasGraph'
 import type { useDesignHistory } from './useDesignHistory'
 import type { DesignPage } from '../schema'
-import type { useReactFlow } from '@xyflow/react'
+import type { Node, useReactFlow } from '@xyflow/react'
 import type { RefObject } from 'react'
 
 type Args = {
+  designId: string
   page: DesignPage | undefined
   pageId: string
   graph: ReturnType<typeof useCanvasGraph>
@@ -22,6 +24,9 @@ type Args = {
   setEditingId: (id: string | null) => void
   setInteractiveId: (id: string | null) => void
 }
+
+const selectOnly = (id: string) => (nodes: Node[]) =>
+  nodes.map((n) => ({ ...n, selected: n.id === id }))
 
 /** Clipboard, zoom and the keyboard that drives them. */
 export function useCanvasController(a: Args) {
@@ -58,6 +63,21 @@ export function useCanvasController(a: Args) {
 
     return () => cancelAnimationFrame(raf)
   }, [a.pageId, fitAll])
+
+  // A screen added from elsewhere in this window comes into view, selected,
+  // once it is on the page shown.
+  useEffect(() => {
+    const onPage = (objectId: string) => Boolean(page?.objects.some((o) => o.id === objectId))
+    const raf = requestAnimationFrame(() => {
+      const id = takeFocus(a.designId, onPage)
+
+      if (!id) return
+      flow.setNodes(selectOnly(id))
+      void flow.fitView({ nodes: [{ id }], padding: 0.3, maxZoom: 1, duration: 200 })
+    })
+
+    return () => cancelAnimationFrame(raf)
+  }, [a.designId, page, flow])
 
   const { setInteractiveId, setEditingId } = a
   const leaveModes = useCallback(() => {

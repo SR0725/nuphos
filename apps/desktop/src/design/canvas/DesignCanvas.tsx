@@ -121,6 +121,7 @@ function Canvas({ teamId, initial, onRename, shownName, onOpenAgentChat }: Props
   })
 
   const { fitAll, fitSelection, leaveModes, paste, duplicate } = useCanvasController({
+    designId: design.id,
     page,
     pageId,
     graph,

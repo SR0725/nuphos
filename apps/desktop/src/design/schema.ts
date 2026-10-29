@@ -146,6 +146,19 @@ export function framePresetOf(frame: Pick<DesignFrame, 'width' | 'height'>): Fra
   return null
 }
 
+/** The size most screens on the page already have, so a phone flow gets a phone screen. */
+export function usualFrameSize(page: DesignPage | undefined): FramePreset {
+  const counts = new Map<FramePreset, number>()
+
+  for (const o of page?.objects ?? []) {
+    const preset = o.type === 'frame' ? framePresetOf(o) : null
+
+    if (preset) counts.set(preset, (counts.get(preset) ?? 0) + 1)
+  }
+
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'desktop'
+}
+
 /** Objects with a box (everything but text, whose height follows its content). */
 export function objectBox(o: DesignObject): {
   x: number

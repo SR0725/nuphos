@@ -1,17 +1,50 @@
 import { useEffect, useState } from 'react'
 
 import { api } from '../../../api'
+import { requestFocus } from '../../../design/canvas/focusRequest'
 import { boundsOf, genId } from '../../../design/canvas/helpers'
-import { FRAME_PRESETS } from '../../../design/schema'
+import { FRAME_PRESETS, usualFrameSize } from '../../../design/schema'
 import { Modal } from '../../Modal'
 import { Button } from '../../ui/button'
 import { AppSelect } from '../../ui/select'
 import { toast } from '../../ui/toast'
 
 import type { ArtifactVersion } from './artifactPayload'
-import type { Design, DesignFrame, DesignSummary } from '../../../design/schema'
+import type { Design, DesignFrame, DesignSummary, FramePreset } from '../../../design/schema'
 
 const NEW_DESIGN = '__new__'
+
+/** What a new screen on that page should measure, until someone picks another size. */
+function sizeFor(design: Design | null, pageId: string): FramePreset {
+  return usualFrameSize(design?.pages.find((p) => p.id === pageId))
+}
+
+/** The screen an artifact becomes, linked back to the version it came from. */
+function artifactFrame(
+  version: ArtifactVersion,
+  sessionId: string | null,
+  size: FramePreset,
+): DesignFrame {
+  return {
+    id: genId(),
+    type: 'frame',
+    title: version.title,
+    x: 0,
+    y: 0,
+    width: FRAME_PRESETS[size].width,
+    height: FRAME_PRESETS[size].height,
+    html: version.content,
+    ...(sessionId
+      ? {
+          sourceArtifact: {
+            sessionId,
+            artifactId: version.artifactId,
+            version: version.version,
+          },
+        }
+      : {}),
+  }
+}
 
 /** Put an HTML artifact on a design as a screen: pick the design and page, or start a new one. */
 export function AddToDesignDialog({
@@ -32,6 +65,7 @@ export function AddToDesignDialog({
   const [designId, setDesignId] = useState(NEW_DESIGN)
   const [loaded, setLoaded] = useState<Design | null>(null)
   const [pickedPageId, setPickedPageId] = useState<string | null>(null)
+  const [pickedSize, setPickedSize] = useState<FramePreset | null>(null)
   const [busy, setBusy] = useState(false)
   // The picked design once it has arrived; a stale one is never shown for the next pick.
   const design = loaded?.id === designId ? loaded : null
@@ -39,6 +73,7 @@ export function AddToDesignDialog({
     (design?.pages.some((p) => p.id === pickedPageId) ? pickedPageId : null) ??
     design?.pages[0]?.id ??
     ''
+  const size = pickedSize ?? sizeFor(design, pageId)
 
   useEffect(() => {
     api
@@ -74,25 +109,7 @@ export function AddToDesignDialog({
   const add = async () => {
     setBusy(true)
     try {
-      const frame: DesignFrame = {
-        id: genId(),
-        type: 'frame',
-        title: version.title,
-        x: 0,
-        y: 0,
-        width: FRAME_PRESETS.desktop.width,
-        height: FRAME_PRESETS.desktop.height,
-        html: version.content,
-        ...(sessionId
-          ? {
-              sourceArtifact: {
-                sessionId,
-                artifactId: version.artifactId,
-                version: version.version,
-              },
-            }
-          : {}),
-      }
+      const frame = artifactFrame(version, sessionId, size)
 
       if (designId === NEW_DESIGN || !design) {
         const created = await api.designsCreate(teamId, {
@@ -116,6 +133,7 @@ export function AddToDesignDialog({
             objects: [{ ...frame, x: page.objects.length ? right + 120 : 0 }],
           },
         ])
+        requestFocus(design.id, frame.id)
         onAdded({ id: design.id, name: design.name })
       }
       toast.success('Added to design', version.title)
@@ -173,7 +191,33 @@ export function AddToDesignDialog({
             />
           </label>
         )}
+        <SizeSelect value={size} onChange={setPickedSize} />
       </div>
     </Modal>
+  )
+}
+
+const SIZE_OPTIONS = Object.entries(FRAME_PRESETS).map(([value, p]) => ({
+  value,
+  label: `${p.label} ${String(p.width)}×${String(p.height)}`,
+}))
+
+function SizeSelect({
+  value,
+  onChange,
+}: {
+  value: FramePreset
+  onChange: (size: FramePreset) => void
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-[12px] text-secondary">
+      Size
+      <AppSelect
+        value={value}
+        onValueChange={(next) => onChange(next as FramePreset)}
+        options={SIZE_OPTIONS}
+        ariaLabel="Size"
+      />
+    </label>
   )
 }
